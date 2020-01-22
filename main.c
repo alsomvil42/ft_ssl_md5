@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "./md5.h"
+#include "./libft/libft.h"
 
 
 t_flag	*retrieve(int mode)
@@ -19,6 +21,58 @@ t_flag	*retrieve(int mode)
 		return (flag);
 	}
 	return (flag);
+}
+
+void	hashage(char *chaine)
+{
+	if (retrieve(0)->r)
+	{
+		printf("JE HASH ===>\n");
+		printf("-----------------------------------\n");
+		printf("%s", chaine);
+		printf("-----------------------------------\n");
+	}
+	else
+	{
+		printf("JE HASH ===>\n");
+		printf("-----------------------------------\n");
+		printf("%s", chaine);
+		printf("-----------------------------------\n");
+	}
+	return ;
+}
+
+void	wait_input(void)
+{
+	void	*buf;
+	char *temp;
+	int test;
+
+	temp = NULL;
+	while ((test = read(0, buf, 1)) > 0)
+	{
+		if (temp == NULL)
+		{
+			temp = ft_strdup(buf);
+		}
+		else
+			temp = ft_strjoin(temp, buf);
+	}
+	if (test == -1)
+	{
+		printf("NIQUE TOI\n");
+		exit(0);
+	}
+	//printf("%s\n", temp);
+	if (retrieve(0)->p)
+	{
+		printf("INPUT =\n");
+		printf("----------------------------\n");
+		printf("%s", temp);
+		printf("----------------------------\n");
+	}
+	hashage(temp);
+	return ;
 }
 
 void	overrides(void)
@@ -42,21 +96,43 @@ int		ft_execute(char *next_arg)
 	t_flag *flag = retrieve(0);
 	
 	overrides();
-	printf("l'argument a exec est : %s\n", next_arg);
+	//printf("l'argument a exec est : %s\n", next_arg);
 	if (retrieve(0)->p)
 	{
 		wait_input();
-		printf("En utilisant le flag : p\n");
+		//printf("En utilisant le flag : p\n");
 	}
 	if (retrieve(0)->q)
-		printf("En utilisant le flag : q\n");
+	{
+		wait_input();
+		//printf("En utilisant le flag : q\n");
+	}
 	if (retrieve(0)->r)
-		printf("En utilisant le flag : r\n");
+	{
+		if (next_arg == NULL)
+		{
+			wait_input();
+			//printf("En utilisant le flag : r\n");
+		}
+		else
+		{
+			hashage(next_arg);
+			printf("Suivi de ==> %s\n", next_arg);
+		}
+	}
 	if (retrieve(0)->s)
-		printf("En utilisant le flag : s\n");
-	if (retrieve(0)->s && next_arg == NULL)
-		printf("test\n");
-
+	{
+		if (next_arg == NULL)
+		{
+			printf("md5: option requires an argument --s\n");
+			printf("usage: md5 [-pqrs] [-s] [files ...]\n");
+		}
+		else
+		{
+			hashage(next_arg);
+		}
+		//printf("En utilisant le flag : s\n");
+	}
 	return (0);
 }
 
@@ -141,6 +217,6 @@ int		main(int ac, char **av)
 		pos++;
 
 	}
-	print_option(retrieve(0));
+	//print_option(retrieve(0));
 	return (0);
 }
