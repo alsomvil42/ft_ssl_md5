@@ -1,258 +1,163 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-/*char *reversebin(char *bin)
+void		ft_bzero(void *s, size_t n)
 {
-	int i = strlen(bin) - 1;
-	int j = 0;
-	char temp;
+	size_t			i;
+	unsigned char	*str;
 
-	while (i > j)
-	{
-		temp = bin[j];
-		bin[j] = bin[i];
-		bin[i] = temp;
-		i--;
-		j++;
-	}
-	return (bin);
-}*/
-
-/*char *convertbin(int c, int mode)
-{
-	char *bin;
-	int letter = c;
-	int pos = 0;
-	//printf("%d\n", letter);
-
-	bin = NULL;
-	if (mode == 0)
-	{
-		//bin = malloc(sizeof(char) * 9);
-		bin = strdup("00000000\0");
-	}
-	else
-	{
-		//bin = malloc(sizeof(char) * 65);
-		bin = strdup("0000000000000000000000000000000000000000000000000000000000000000\0");
-	}
-	while (letter > 0)
-	{
-		if (letter % 2 != 0)
-		{
-			bin[pos] = '1';
-			pos++;
-		}
-		else
-		{
-			pos++;
-		}
-		letter = letter / 2;
-	}
-	bin = reversebin(bin);
-	return (bin);
-}*/
-
-char	*ft_strnew(size_t size)
-{
-	size_t	i;
-	char	*str;
-
+	str = (unsigned char*)s;
 	i = 0;
-	if ((str = malloc(sizeof(char) * (size + 1))) == NULL)
-		return (NULL);
-	while (i <= size)
+	while (i < n)
 	{
-		str[i] = '\0';
+		str[i] = 0;
 		i++;
 	}
-	return (str);
 }
 
-char	*ft_strjoin(char const *s1, char const *s2)
+void	*ft_memalloc(size_t size)
 {
-	char	*sjoin;
+	void *ptr;
 
-	if (s1 == NULL && s2 == NULL)
-		return (NULL);
-	else if (s1 == NULL)
-		return (strdup((char*)s2));
-	else if (s2 == NULL)
-		return (strdup((char*)s1));
-	sjoin = ft_strnew(strlen(s1) + strlen(s2));
-	if (sjoin == NULL)
-		return (NULL);
-	strcpy(sjoin, s1);
-	strcat(sjoin, s2);
-	return (sjoin);
+	if (!(ptr = malloc(size)))
+	{
+		write(2, "Malloc error.\n", 14);
+		exit(EXIT_FAILURE);
+	}
+	ft_bzero(ptr, size);
+	return (ptr);
 }
 
-int numberofpadding(int len)
+char	*concatstr(uint32_t *h)
 {
-	int num;
-
-	num = (448 - (len % 512));
-	//printf("%d\n", num);
-	if (num == 0)
-		return (512);
-	else if (num < 0)
-		return (512 + num);
-	else
-		return (num);
-	return (0);
+	return (NULL);
 }
 
-char *addpadding(int padding, char *chaine, char *taillebin)
+static int		rotate(uint32_t a, uint32_t b)
+{
+	return ((a << b) | (a >> (32-b)));
+}
+
+static void	hash3(uint32_t *str, unsigned int *a, uint32_t *k, int *s)
 {
 	int i;
+	uint32_t f;
+	uint32_t g;
 
-	i = 1;
-	//printf("taillebin = %s\n", taillebin);
-	if (chaine == NULL)
+	i = 0;
+	while (i < 64)
 	{
-		chaine = malloc(sizeof(char) * 512);
-		chaine[0] = '1';
-		while (i < 511)
+		if (i < 16)
 		{
-			chaine[i] = '0';
-			i++;
+			f = (a[1] & a[2]) | ((~a[1]) & a[3]);
+			g = i;
 		}
-		chaine[i] = '\0';
-		printf("%s\n", chaine);
-	}
-	return (chaine);
-}
-
-void	addbinaireint(char **chaine2, unsigned long c, int i)
-{
-	//printf("I = %d\n", i);
-	//printf("C = %ld\n", c);
-	//printf("CHAINE2 = %s\n", *chaine2);
-	while (c > 0)
-	{
-		if (c % 2 != 0)
+		else if (i < 32)
 		{
-			(*chaine2)[i] = '1';
-			i--;
+			f = (a[3] & a[1]) | ((~a[3]) & a[2]);
+			g = (5*i + 1) % 16;
+		}
+		else if (i < 48)
+		{
+			f = a[1] ^ a[2] ^ a[3];
+			g = (3*i + 5) % 16;
 		}
 		else
 		{
-			(*chaine2)[i] = '0';
-			i--;
+			f = a[2] ^ (a[1] | (~a[3]));
+			g = (7*i) % 16;
 		}
-		c = c / 2;
+		f = f + a[0] + k[i] + str[g];
+		a[0] = a[3];
+		a[3] = a[2];
+		a[2] = a[1];
+		a[1] = a[1] + rotate(f, s[i]);
+		i++;
 	}
-	(*chaine2)[0] = '1';
 	return ;
 }
 
-char *addother(unsigned long len, char *chaine)
+char *hash2(int s[64], uint32_t k[64], char *str, int size)
 {
-	char *completechaine = NULL;
-	char *chaine2 = NULL;
-	int padding;
-	int taillechaine;
+	uint32_t a[4];
+	uint32_t h[4];
 	int i;
 
 	i = 0;
-
-	//printf("LEN = %ld\n", len);
-	if (len == 0)
+	h[0] = 1732584193;
+	h[1] = 4023233417;
+	h[2] = 2562383102;
+	h[3] = 271733878;
+	while (i < size)
 	{
-		padding = 512;
-		//printf("PADDING = %d\n", 512);
-		//completechaine = addpadding(padding, chaine, 0);
+		a[0] = h[0];
+		a[1] = h[1];
+		a[2] = h[2];
+		a[3] = h[3];
+		hash3((uint32_t*)(&(str[i*64])), a, k, s);
+		h[0] += a[0];
+		h[1] += a[1];
+		h[2] += a[2];
+		h[3] += a[3];
+		i++;
 	}
-	else
-	{
-		taillechaine = strlen(chaine);
-		//printf("TAILLE CHAINE = %d\n", taillechaine);
-		padding = numberofpadding(len);
-		chaine2 = malloc(sizeof(char) * (padding + 65));
-		while (i < padding + 64)
-		{
-			chaine2[i] = '0';
-			i++;
-		}
-		chaine2[i] = '\0';
-		//printf("CHAINE2 = %s\n", chaine2);
-		//printf("%ld\n", len);
-		addbinaireint(&chaine2, len, padding + 63);
-		printf("CHAINE2 = %s\n", chaine2);
-		//printf("%s\n", convertbin(taillechaine, 1));
-		//completechaine = addpadding(padding, chaine, convertbin(taillechaine, 1));
-	}
-	//printf("PADDING = %d\n", padding);
-	return (completechaine);
+	printf("%u %u %u %u\n", h[0], h[1], h[2], h[3]);
+	return (concatstr(h));
 }
 
-void	addbinairechar(char **chaine1, int c, int i, int len)
+char	*hash1(char *str, int size)
 {
-	int j;
-	int index;
-
-	j = 0;
-	index = (i * 8) - 1;
-	while (c > 0)
-	{
-		if (c % 2 != 0)
-		{
-			(*chaine1)[index] = '1';
-			index--;
-		}
-		else
-		{
-			(*chaine1)[index] = '0';
-			index--;
-		}
-		c = c / 2;
-	}
-	return ;
+	int s[64] = {7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 
+		22, 5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20, 
+		4, 11, 16, 23, 4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23, 6, 10, 
+		15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21 };
+	uint32_t k[64] = { 0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 
+		0x4787c62a, 0xa8304613, 0xfd469501, 0x698098d8, 0x8b44f7af, 0xffff5bb1, 
+		0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821, 0xf61e2562, 
+		0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x02441453, 0xd8a1e681, 
+		0xe7d3fbc8, 0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed, 0xa9e3e905, 
+		0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a, 0xfffa3942, 0x8771f681, 0x6d9d6122, 
+		0xfde5380c, 0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70, 0x289b7ec6, 
+		0xeaa127fa, 0xd4ef3085, 0x04881d05, 0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 
+		0xc4ac5665, 0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 
+		0x8f0ccc92, 0xffeff47d, 0x85845dd1, 0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 
+		0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391 };
+	
+	return (hash2(s, k , str, size / 64));
 }
 
-int main(int ac, char **av)
+char	*prepare(char *str, int *size)
+{
+	int len;
+	uint64_t index;
+	char *str2;
+
+	index = strlen(str);
+	len = strlen(str);
+	str[len++] = -128;
+	while (len % 64 != 56)
+		len++;
+	str2 = ft_memalloc(len + 8);
+	strncpy(str2, str, index + 1);
+	index = index * 8;
+	memcpy(&(str2[len]), &index, 8);
+	*size = len + 8;
+	return (str2);
+}
+
+int		main(int ac, char **av)
 {
 	ac = 1;
-	size_t i = 0;
-	size_t j = 0;
+	int size;
+	char *str;
 
-	char *test = strdup(av[1]);
-	char *chaine1;
-	size_t len;
-
-	len = 0;
-	chaine1 = NULL;
-	if (!strcmp(test, ""))
-	{
-		addother(0, chaine1);
-		return (1);
-	}
-	len = strlen(test);
-	if (len == 0)
-	{
-		chaine1 = malloc(sizeof(char) * 513);
-		//Remplir chaine de charactere
-	}
-	else if (len > 0)
-	{
-		chaine1 = malloc(sizeof(char) * (numberofpadding(len * 8) + 1));
-		while (j < (len * 8))
-		{
-			chaine1[j] = '0';
-			j++;
-		}
-		chaine1[j] = '\0';
-		free(chaine1);
-		while (i < len)
-		{
-			addbinairechar(&chaine1, test[i], i + 1, len);
-			i++;
-		}
-		printf("CHAINE1 = %s\n", chaine1);
-		//printf("STRLEN = %ld\n", strlen(chaineconcat));
-		//printf("CALCUL %ld\n", len * 8);
-	}
-	addother(len * 8, chaine1);
+	str = av[1];
+	size = 0;
+	
+	str = prepare(str, &size);
+	printf("%s\n", str);
+	str = hash1(str, size);
 	return (0);
 }
